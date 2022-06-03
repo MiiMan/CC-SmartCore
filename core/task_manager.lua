@@ -1,6 +1,4 @@
-require "application"
-
-TaskManager = {type = "TaskManager"}
+local TaskManager = {type = "TaskManager"}
 
 --function(): TaskManager
 function TaskManager:new()
@@ -11,7 +9,13 @@ function TaskManager:new()
         --function(Application): nil
         function public:addApplication(cor)
             cor:load()
-            table.insert(private.coroutines, cor)
+            table.insert(private.applications, cor)
+        end
+
+        --function(Application): nil
+        function public:killApplication(id)
+            private.applications[id]:kill()
+            table.remove(private.applications, id)
         end
         
         --function(): nil
@@ -40,7 +44,4 @@ function TaskManager:new()
     self.__index = self; return public
 end
 
-
-t = TaskManager:new()
-t:addCoroutine(Application:new(ApplicationParams:new("test.lua", _ENV)))
-t:run()
+return TaskManager

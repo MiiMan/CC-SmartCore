@@ -1,7 +1,9 @@
-ApplicationParams = {type = "ApplicationParams"}
+local App= {}
 
---function(num, str, table): table
-function ApplicationParams:new(path, env)
+App.ApplicationParams = {type = "ApplicationParams"}
+
+--function(num, str, table): ApplicationParams
+function App.ApplicationParams:new(path, env)
     local public = {}
         public.path = path
         public.env = env
@@ -15,32 +17,32 @@ function ApplicationParams:new(path, env)
     self.__index = self; return public
 end
 
-Application = {type = "Application"}
+App.Application = {type = "Application"}
 
-Application.status = {
+App.Application.status = {
     waitForLoad = 0,
     inProcess = 1,
     dead = 2,
 }
 
-Application.exitCodes = {
+App.Application.exitCodes = {
     notKilled = 0,
     killed = 1,
     done = 2,
 }
 
 --function(table): Application
-function Application:new(params)
+function App.Application:new(params)
 
     local private= {}
         private.params = params
         private.coroutine = nil
-        private.status = Application.status.waitForLoad
-        private.exitCode = Application.exitCodes.notKilled
+        private.status = App.Application.status.waitForLoad
+        private.exitCode = App.Application.exitCodes.notKilled
 
         --function(): nil
         function private:close()
-            private.status = Application.status.dead
+            private.status = App.Application.status.dead
             private.coroutine = nil
             private.params = nil
         end
@@ -49,36 +51,36 @@ function Application:new(params)
 
         --function(): nil
         function public:load()
-            assert(private.status == Application.status.waitForLoad)
+            assert(private.status == App.Application.status.waitForLoad)
             local file = loadfile(private.params.path, "t", private.params.env)
             private.coroutine = coroutine.create(file)
-            private.status = Application.status.inProcess
+            private.status = App.Application.status.inProcess
         end
 
         --function(): bool
         function public:continue(...)
             eventData = {...}
-            assert(private.status == Application.status.inProcess)
+            assert(private.status == App.Application.status.inProcess)
             local res = coroutine.resume(assert(private.coroutine), unpack(eventData))
             return res
         end
 
         function public:status()
-            assert(private.status == Application.status.inProcess)
+            assert(private.status == App.Application.status.inProcess)
             return coroutine.status(assert(private.coroutine))
         end
 
         --function(): nil
         function public:kill()
-            assert(private.status == Application.status.inProcess)
-            private.exitCode = Application.exitCode.killed
+            assert(private.status == App.Application.status.inProcess)
+            private.exitCode = App.Application.exitCode.killed
             private:close()
         end
 
         --function(): nil
         function public:done()
-            assert(private.status == Application.status.inProcess)
-            private.exitCode = Application.exitCodes.done
+            assert(private.status == App.Application.status.inProcess)
+            private.exitCode = App.Application.exitCodes.done
             private:close()
         end
 
@@ -86,6 +88,4 @@ function Application:new(params)
     self.__index = self; return public
 end
 
-app = Application:new(ApplicationParams:new("test.lua", _ENV))
-app:load()
-app:continue()
+return App
