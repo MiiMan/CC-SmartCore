@@ -1,3 +1,5 @@
+require "utils"
+
 local App= {}
 
 App.ApplicationParams = {type = "ApplicationParams"}
@@ -7,11 +9,6 @@ function App.ApplicationParams:new(path, env)
     local public = {}
         public.path = path
         public.env = env
-
-        --function(): ApplicationParams
-        function public:copy()
-            return ApplicationParams:new(self.path, self.env)
-        end
 
     setmetatable(public, self)
     self.__index = self; return public
@@ -35,53 +32,76 @@ App.Application.exitCodes = {
 function App.Application:new(params)
 
     local private= {}
-        private.params = params
+        private.loadInformation = {}
+        private.params = table.copy(params)
         private.coroutine = nil
         private.status = App.Application.status.waitForLoad
         private.exitCode = App.Application.exitCodes.notKilled
+        private.exitMessage = ""
 
-        --function(): nil
-        function private:close()
+        --function(str/nil): nil
+        function private:close(m)
             private.status = App.Application.status.dead
+            private.exitMessage = m or ""
             private.coroutine = nil
-            private.params = nil
+        end
+
+        --function(): bool
+        function private:continue(...)
+            eventData = {...}
+
+            assert(private.status == App.Application.status.inProcess)
+            local res, ex = coroutine.resume(assert(private.coroutine), unpack(eventData))
+
+            if res == false then
+                private.exitCode = App.Application.exitCodes.done
+                private:close(ex)
+            end 
+        end
+
+        --function(str): nil
+        function private:kill(m)
+            assert(private.status == App.Application.status.inProcess)
+            private.exitCode = App.Application.exitCodes.killed
+            private:close(m)
         end
 
     local public = {}
 
+         --function(): table
+         function public:getParams()
+            return table.copy(private.params)
+        end
+
+        --function(): num
+        function public:getLoadInformation()
+            return private.loadInformation
+        end
+
+        --function(): num
+        function public:getStatus()
+            return private.status
+        end
+
+         --function(): num
+         function public:getExitCode()
+            return private.exitCode
+        end
+
+        --function(): num
+        function public:getExitMessage()
+            return private.exitMessage
+        end
+
         --function(): nil
-        function public:load()
+        function public:load(loadInformation)
             assert(private.status == App.Application.status.waitForLoad)
-            local file = loadfile(private.params.path, "t", private.params.env)
+            private.loadInformation = loadInformation
+            local file = loadfile(private.params.path, "t", private.params.env.env)
             private.coroutine = coroutine.create(file)
             private.status = App.Application.status.inProcess
-        end
-
-        --function(): bool
-        function public:continue(...)
-            eventData = {...}
-            assert(private.status == App.Application.status.inProcess)
-            local res = coroutine.resume(assert(private.coroutine), unpack(eventData))
-            return res
-        end
-
-        function public:status()
-            assert(private.status == App.Application.status.inProcess)
-            return coroutine.status(assert(private.coroutine))
-        end
-
-        --function(): nil
-        function public:kill()
-            assert(private.status == App.Application.status.inProcess)
-            private.exitCode = App.Application.exitCode.killed
-            private:close()
-        end
-
-        --function(): nil
-        function public:done()
-            assert(private.status == App.Application.status.inProcess)
-            private.exitCode = App.Application.exitCodes.done
-            private:close()
+            
+            return private.continue, private.kill
         end
 
     setmetatable(public, self)
