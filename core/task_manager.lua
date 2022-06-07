@@ -1,4 +1,5 @@
 require "utils"
+local App = require "application"
 
 local TaskManager = {type = "TaskManager"}
 
@@ -24,7 +25,7 @@ function TaskManager:new()
 
         --function(Application): nil
         function public:addApplication(cor)
-            cor = table.copy(cor)
+            cor = table.deepCopy(cor)
             local continue, kill = cor:load({id = #private.applications+1, runId = #private.running+1})
             table.insert(private.applications, cor)
             table.insert(private.running, {app = private.applications[#private.applications], continue = continue, kill = kill})
@@ -41,7 +42,12 @@ function TaskManager:new()
 
         --function(): table
         function public:getApplicationList()
-            return table.copy(private.applications)
+            return table.deepCopy(private.applications)
+        end
+
+        --function(): table
+        function public:getEnv()
+            return _ENV
         end
         
         --function(): nil
@@ -54,6 +60,9 @@ function TaskManager:new()
                     if private.running[i].app:getStatus() == App.Application.status.inProcess then
                         private.running[i].continue(private.running[i].app, unpack(eventData))
                     else
+                        if i == 1 then
+                            print(private.running[i].app:getExitMessage())
+                        end
                         private:addToDoneTable(i)
                     end
                 end

@@ -6,9 +6,16 @@ App.ApplicationParams = {type = "ApplicationParams"}
 
 --function(num, str, table): ApplicationParams
 function App.ApplicationParams:new(path, env)
+    local private = {}
+        private.path = path
+
     local public = {}
-        public.path = path
+
         public.env = env
+
+        function getPath()
+            return path
+        end
 
     setmetatable(public, self)
     self.__index = self; return public
@@ -33,7 +40,7 @@ function App.Application:new(params)
 
     local private= {}
         private.loadInformation = {}
-        private.params = table.copy(params)
+        private.params = params
         private.coroutine = nil
         private.status = App.Application.status.waitForLoad
         private.exitCode = App.Application.exitCodes.notKilled
@@ -70,7 +77,7 @@ function App.Application:new(params)
 
          --function(): table
          function public:getParams()
-            return table.copy(private.params)
+            return table.deepCopy(private.params)
         end
 
         --function(): num
@@ -96,8 +103,10 @@ function App.Application:new(params)
         --function(): nil
         function public:load(loadInformation)
             assert(private.status == App.Application.status.waitForLoad)
+
             private.loadInformation = loadInformation
-            local file = loadfile(private.params.path, "t", private.params.env.env)
+            
+            local file = loadfile(private.params.getPath(), "t", private.params.env.env)
             private.coroutine = coroutine.create(file)
             private.status = App.Application.status.inProcess
             

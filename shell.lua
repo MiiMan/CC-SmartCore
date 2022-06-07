@@ -22,6 +22,6 @@ while true do
     elseif input[1] == "kill" then
         killApplication(tonumber(input[2]))
     elseif input[1] == "run" then
-        addApplication(App.Application:new(App.ApplicationParams:new(input[2], Environment.u)))
+        addApplication(App.Application:new(App.ApplicationParams:new(input[2], Environment:copy(Environment.u))))
     end
 end

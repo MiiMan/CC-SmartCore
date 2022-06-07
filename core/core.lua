@@ -5,6 +5,7 @@ local Port = require "port"
 local TaskManager = require "task_manager"
 local App = require "application"
 local Environment = require "environment"
+local os = require "classic_libraries/os"
 
 local task_manager = TaskManager:new()
 
@@ -28,8 +29,13 @@ function su.getApplicationList()
     return task_manager:getApplicationList()
 end
 
-Environment.u = Environment:newWith("u", _ENV, {task_manager=nil, Port = Port})
+--function(): table
+function su.getCoreEnv()
+    return task_manager:getEnv()
+end
+
+Environment.u = Environment:newWith("u", _ENV, {task_manager=nil, Port = Port, os = os})
 Environment.su = Environment:newWith("su", Environment.u.env, su)
 
-task_manager:addApplication(App.Application:new(App.ApplicationParams:new(inputs[1], Environment.su)))
+task_manager:addApplication(App.Application:new(App.ApplicationParams:new(inputs[1], Environment:copy(Environment.su))))
 task_manager:run()
